@@ -7,14 +7,23 @@ diversified, vol-targeted, FTMO-compatible trend-following engine.
 behavioral biases and slow information diffusion create trends that last longer
 than expected. Every book parameter was treated as a hypothesis.
 
+## Layout
+
+```
+data/      committed daily OHLC CSVs (yfinance cache, raw ticker filenames)
+src/       shared modules (data.py, backtest.py, stats.py) + one script per phase
+results/   results/phaseN/PHASEN_REPORT.md + charts/ + csv artifacts per phase
+engine/    production engine: config.json, core.py, mt5_connector.py, run_weekly.py
+```
+
 ## How to run
 
 ```
 pip install pandas numpy scipy matplotlib yfinance
-python slow_turtle.py        # Phase 1+2 baseline + report
-python phase3_ma_study.py    # ... any phase, each writes results/phaseN_report.md
-python engine.py             # production run -> runs/<ts>/ + runs/latest_signals.csv
-python test_slow_turtle.py && python test_engine.py   # sanity checks
+python src/phase1_baseline.py     # any phase -> results/phaseN/PHASEN_REPORT.md
+python src/test_backtest.py       # backtest sanity checks
+python engine/run_weekly.py       # weekly cycle, dry-run (--live for MT5)
+python engine/test_engine.py && python engine/test_mt5_order.py
 ```
 
 Data: yfinance daily → weekly (W-FRI), cached in `data/`. 16 assets: 6 equity
@@ -22,7 +31,7 @@ indices, gold/silver/oil futures, 3 FX pairs, 4 sector ETFs (sectors instead of
 single stocks to avoid survivorship bias). All backtests: signal at weekly close →
 execution at next Monday open, open-to-open returns, long only.
 
-## Findings ledger (each phase = one script + one report in results/)
+## Findings ledger (each phase = one script in src/ + one report in results/)
 
 | Phase | Question | Verdict |
 |---|---|---|
@@ -39,19 +48,14 @@ execution at next Monday open, open-to-open returns, long only.
 | 12 | Robustness | All disjoint 5y windows positive (0.78-1.18); insensitive to 25bp costs & 1w delay; parameter perturbation ±20% stays within 0.07 Sharpe; MC bootstrap fine. **DSR 0.875** — below the 0.9 ideal, flagged honestly |
 | 13 | + Mean reversion | TF/MR corr 0.25 (good) but the simple MR sleeve is too weak (Sharpe 0.22) — blending dilutes. Needs the dedicated MR program's sleeve before allocation |
 
-## Production architecture
+## Production engine
 
 ```
-data (yfinance + cache)      slow_turtle.fetch_daily / to_weekly
-  -> features / trend        common.ma (SMA/EMA/WMA/HMA/KAMA), atr
-  -> signal                  fast MA > slow MA, lag 2 weeks
-  -> sizing                  engine.sleeve_weights (EWMA vol target)
-  -> portfolio               equal weight across sleeves
-  -> risk overlays           phase11_ftmo.overlay (scale, dd-cut, vol brake)
-  -> execution artifacts     runs/<ts>/{config,stats,equity,signals} + runs/latest_signals.csv
+data -> sleeve_weight() -> portfolio -> overlay exposure -> RebalanceIntent -> connector
 ```
 
-`engine.py` is fully config-driven (`python engine.py my_config.json`); every run is
-reproducible and archived. The MT5 side consumes `runs/latest_signals.csv`
-(name, ticker, target_weight, asof) — a minimal MQL5 bridge EA reads it weekly and
-rebalances. Live-order routing deliberately left to the MT5 EA.
+- `engine/config.json` — every parameter cites the phase that selected it.
+- `engine/core.py` — pure functions; state lives in the append-only `journal.jsonl`.
+- `engine/run_weekly.py` — weekly cycle: refresh data, targets, FTMO check, execute.
+  Dry-run by default; `--live` uses the MetaTrader5 package (`mt5_connector.MT5Connector`,
+  FTMO CFD symbol map). Schedule `run_weekly.bat` for Monday pre-open.

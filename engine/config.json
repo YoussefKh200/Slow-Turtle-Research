@@ -1,0 +1,49 @@
+{
+  "_note": "Every parameter cites the research phase that selected it. Change nothing without re-running that phase.",
+  "universe": {
+    "names": ["SPY", "QQQ", "DIA", "IWM", "NAS100", "SP500", "GOLD", "SILVER", "OIL",
+              "EURUSD", "GBPUSD", "USDJPY", "TECH", "UTILITIES", "INDUSTRIALS", "MATERIALS"],
+    "_source": "phase6: diversification is the biggest single improvement (0.36 avg sleeve corr); FX sleeves kept despite weak standalone because they diversify and vol-sizing bounds their damage"
+  },
+  "signal": {
+    "fast": 22,
+    "slow": 55,
+    "ma_kind": "SMA",
+    "lag_weeks": 2,
+    "_source": "phase3: whole grid is a flat plateau, 22/55 SMA at 90th percentile already; phase4: no signal family beats the cross; phase8: Monday-open execution unbeaten (lag 2 weeks = signal close -> next Monday open)"
+  },
+  "sizing": {
+    "scheme": "ewma_vol_target",
+    "sleeve_vol_target": 0.10,
+    "ewma_span": 26,
+    "sleeve_cap": 1.0,
+    "_source": "phase5: EWMA vol targeting at 10% halves maxDD at unchanged Sharpe; cap 1x = no sleeve leverage"
+  },
+  "portfolio": {
+    "weighting": "equal",
+    "portfolio_scale": 0.6,
+    "_source": "phase6: equal weight across sleeves; phase11: 0.6x scale brings portfolio to ~6% vol for FTMO headroom"
+  },
+  "risk_overlays": {
+    "dd_scaling": true,
+    "dd_floor": 0.08,
+    "vol_brake": true,
+    "vol_brake_window_weeks": 8,
+    "vol_brake_trigger": 1.5,
+    "_source": "phase11: linear exposure cut flat at -8% dd + 8w vol brake -> maxDD -3.6%, Sharpe 0.94; phase10: risk lives at portfolio level, never per-trade stops (stops <10% MAE kill winners)"
+  },
+  "ftmo": {
+    "max_daily_loss": 0.05,
+    "max_total_drawdown": 0.10,
+    "halt_buffer": 0.8,
+    "_source": "phase11: overlays keep the backtest at -3.6% total DD; halt new rebalances at halt_buffer x each cap as the hard guard"
+  },
+  "monitoring": {
+    "min_rolling_sharpe_3y": -0.3,
+    "_source": "phase12: every disjoint 5y window scored Sharpe 0.78-1.18; a 3y rolling Sharpe below -0.3 is outside anything seen and means stop and re-research"
+  },
+  "caveats": {
+    "deflated_sharpe": 0.875,
+    "_source": "phase12: DSR < 0.9 - edge probable but not proven beyond multiple-testing doubt. Deploy small, paper-trade first. phase13: do NOT blend with the simple MR sleeve (Sharpe 0.22 dilutes); wait for the dedicated MR program's sleeve."
+  }
+}

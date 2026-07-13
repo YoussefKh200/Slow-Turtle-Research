@@ -1,4 +1,4 @@
-data/
 __pycache__/
 *.pyc
-runs/
+engine/journal.jsonl
+engine/run_weekly.log
