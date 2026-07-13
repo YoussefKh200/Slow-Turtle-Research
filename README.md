@@ -52,6 +52,8 @@ execution at next Monday open, open-to-open returns, long only.
 | 11 | FTMO version | 0.6x scale + linear dd-cut (flat at -8%) + vol brake: **maxDD -3.6%, Sharpe 0.94**, zero weeks < -2%. Room to lever ~2x inside a 10% limit |
 | 12 | Robustness | All disjoint 5y windows positive (0.78-1.18); insensitive to 25bp costs & 1w delay; parameter perturbation ±20% stays within 0.07 Sharpe; MC bootstrap fine. **DSR 0.875** — below the 0.9 ideal, flagged honestly |
 | 13 | + Mean reversion | TF/MR corr 0.25 (good) but the simple MR sleeve is too weak (Sharpe 0.22) — blending dilutes. Needs the dedicated MR program's sleeve before allocation |
+| 13b | + real MR sleeve | Mean-Reversion-Research's finished sleeve (Sharpe 0.813) clears the bar: corr −0.06, TF 80/20 blend hits Sharpe 1.07 with a shallower MaxDD than pure TF. Not yet in production — needs its own robustness pass |
+| 13c | Blend robustness | 80/20 blend PASSES the full Phase-12 gauntlet — all 5y windows up, **DSR 0.956** (clears the 0.9 line Phase 12's TF-only 0.875 missed), cost-stress Sharpe stays 1.01-1.11. Statistically the strongest result in the program; still needs engine work before production |
 
 ## Production engine
 
@@ -64,4 +66,4 @@ data -> sleeve_weight() -> portfolio -> overlay exposure -> RebalanceIntent -> c
 - `engine/run_weekly.py` — weekly cycle: refresh data, targets, FTMO check, execute (dry-run).
 - `engine/mt5_connector.py` — `DryRunConnector` only for now; a real MT5 order-routing
   connector is deliberately not built until there's a demo/funded account and verified
-  broker symbol names to test it against (see RESEARCH.md's "path to live" section).
+  broker symbol names to test it against (see RESEARCH.md's "production engine" section).

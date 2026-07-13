@@ -42,6 +42,20 @@ def ftmo(port: pd.Series) -> pd.Series:
     return overlay(port, 0.6, True, True)
 
 
+def stressed_tf(delay=0, cost_bp=0) -> pd.Series:
+    """Identical to ftmo(portfolio()) except extra signal delay and per-turn costs."""
+    uni = load_universe()
+    rets = {}
+    for a, w in uni.items():
+        c = w["Close"]
+        sig = ma(c, 22, "SMA") > ma(c, 55, "SMA")
+        vol = c.pct_change().ewm(span=26, adjust=False).std() * np.sqrt(WEEKS_PER_YEAR)
+        pos = (sig * (0.10 / vol).clip(upper=1)).shift(2 + delay).fillna(0.0)
+        turn = pos.diff().abs().fillna(0.0)
+        rets[a] = (w["Open"].pct_change().fillna(0.0) * pos - turn * cost_bp / 1e4).iloc[SKIP:]
+    return ftmo(pd.concat(rets, axis=1, sort=True).dropna().mean(axis=1))
+
+
 def deflated_sharpe(r: pd.Series, n_trials: int) -> float:
     """Bailey & Lopez de Prado DSR: prob. that true Sharpe > 0 given selection bias."""
     sr = sharpe(r) / np.sqrt(WEEKS_PER_YEAR)  # per-period
@@ -91,25 +105,12 @@ if __name__ == "__main__":
               f"- P(maxDD worse than -10%): {(np.array(sims_dd) < -0.10).mean():.1%}\n"]
 
     # execution stress on the sleeve level
-    uni = load_universe()
-    def stressed(delay=0, cost_bp=0):
-        """Identical to portfolio() except extra signal delay and per-turn costs."""
-        rets = {}
-        for a, w in uni.items():
-            c = w["Close"]
-            sig = ma(c, 22, "SMA") > ma(c, 55, "SMA")
-            vol = c.pct_change().ewm(span=26, adjust=False).std() * np.sqrt(WEEKS_PER_YEAR)
-            pos = (sig * (0.10 / vol).clip(upper=1)).shift(2 + delay).fillna(0.0)
-            turn = pos.diff().abs().fillna(0.0)
-            rets[a] = (w["Open"].pct_change().fillna(0.0) * pos - turn * cost_bp / 1e4).iloc[SKIP:]
-        return ftmo(pd.concat(rets, axis=1, sort=True).dropna().mean(axis=1))
-
     stress = {
         "clean": strat,
-        "+1w execution delay": stressed(delay=1),
-        "10bp per turn": stressed(cost_bp=10),
-        "25bp per turn (spread stress)": stressed(cost_bp=25),
-        "delay + 25bp": stressed(delay=1, cost_bp=25),
+        "+1w execution delay": stressed_tf(delay=1),
+        "10bp per turn": stressed_tf(cost_bp=10),
+        "25bp per turn (spread stress)": stressed_tf(cost_bp=25),
+        "delay + 25bp": stressed_tf(delay=1, cost_bp=25),
     }
     sdf = pd.DataFrame({k: {"sharpe": sharpe(v), "cagr": perf(v)["cagr"],
                             "max_dd": perf(v)["max_dd"]} for k, v in stress.items()}).T

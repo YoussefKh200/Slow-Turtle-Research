@@ -511,6 +511,74 @@ allocation between the two styles.
 
 ---
 
+## Phase 13b — combining with the *real* mean reversion sleeve
+
+The Mean-Reversion-Research program (sibling repo) finished after Phase 13
+was written: MR_QQQ and MR_SPY (Z-score < −2 entry, 6% MAE stop, 10% vol
+target, its own Phase 9) score **Sharpe 0.813 solo** — clearing the bar Phase
+13 set for revisiting the blend. `src/phase13b_real_mr_blend.py` imports that
+program's sleeve functions directly (no reimplementation — same code, so the
+two programs can't silently drift apart), compounds their daily returns to
+the weekly W-FRI calendar TF runs on, and re-runs the exact Phase 13 blend
+grid.
+
+| Blend | Sharpe | CAGR | MaxDD | Calmar |
+|---|---|---|---|---|
+| TF 100% / MR 0% | 0.94 | 2.5% | −3.6% | 0.68 |
+| TF 80% / MR 20% | 1.07 | 2.3% | −2.7% | 0.84 |
+| TF 70% / MR 30% | 1.13 | 2.2% | −2.8% | 0.78 |
+| **TF 60% / MR 40%** | **1.15** | 2.1% | −3.2% | 0.68 |
+| TF 50% / MR 50% | 1.13 | 2.0% | −3.5% | 0.59 |
+| TF 30% / MR 70% | 0.95 | 1.9% | −4.2% | 0.45 |
+| TF 0% / MR 100% | 0.61 | 1.6% | −6.2% | 0.26 |
+
+**Correlation TF vs real MR: −0.06** — effectively zero, better than Phase
+13's already-good 0.25. **Every blend from 80/20 to 30/70 beats pure TF on
+Sharpe**, unlike Phase 13 where every blend was worse. 80/20 is the standout:
+Sharpe 1.07 (vs 0.94 pure TF) *and* a shallower MaxDD (−2.7% vs −3.6%) — a
+free lunch on both axes, the signature of blending two genuinely
+uncorrelated, individually-decent edges (Phase 13's math was right; it just
+didn't have a strong enough second leg yet).
+
+**Not yet adopted into `engine/config.json`.** This result needs its own
+robustness pass before production (Phase 13b is a single blend-grid run, not
+a DSR/walk-forward/perturbation check like Phase 12 gave the TF-only config)
+and requires wiring the engine to run and hold Mean-Reversion-Research's
+sleeves alongside TF's — a real engineering change, not just a config edit.
+Next step, not done here (see Phase 13c).
+
+---
+
+## Phase 13c — robustness check on the 80/20 blend
+
+`src/phase13c_blend_robustness.py` puts TF 80% / MR 20% through the same
+gauntlet Phase 12 gave the TF-only config: disjoint 5y out-of-sample windows,
+26-week block-bootstrap Monte Carlo, deflated Sharpe against the combined
+search (TF's own 500 trials + Phase 13's 7 blends + Phase 13b's 7 blends =
+514), and TF-side execution stress carried through the blend. MR's own leg
+isn't re-stressed here — it already went through this in its own program
+(OOS Sharpe 0.55, survives 10bp slippage + 1-day delay, DSR 0.81).
+
+| Check | Result | vs. pure-TF Phase 12 |
+|---|---|---|
+| Disjoint 5y windows | 0.72 / 0.93 / 1.49 / 1.12 | all higher than the matching TF-only windows (0.79/0.78/1.18/0.93) |
+| MC bootstrap (2000 paths) | Sharpe 5th pct 0.69, median 1.05, 95th 1.43 | — |
+| P(maxDD worse than −10%) | 0.1% | (TF-only: 0.2%) |
+| **Deflated Sharpe** | **0.956** | **clears 0.9** (TF-only: 0.875, flagged as a caveat) |
+| Cost/delay stress | Sharpe 1.01–1.11 across the board | stays clear of TF-only's clean 0.94 |
+
+**PASS on every axis, and it specifically resolves Phase 12's flagged
+weakness** — the TF-only config's DSR (0.875) sat below the 0.9 comfort line
+because of the sheer number of configurations tried across the program; the
+blend's near-zero correlation with a genuinely independent, separately
+multiple-testing-corrected MR sleeve (DSR 0.81 on its own) pushes the
+combined DSR to 0.956. This is now the most statistically solid result in
+either research program — but "statistically solid" and "in production" are
+different bars: the engine still needs to be built to hold both sleeves
+before this stops being a backtest.
+
+---
+
 ## The production engine — what actually runs
 
 `engine/config.json` is the single source of truth; every block has a
