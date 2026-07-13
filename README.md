@@ -27,9 +27,15 @@ engine/    production engine: config.json, core.py, mt5_connector.py, run_weekly
 pip install pandas numpy scipy matplotlib yfinance
 python src/phase1_baseline.py     # any phase -> results/phaseN/PHASEN_REPORT.md
 python src/test_backtest.py       # backtest sanity checks
-python engine/run_weekly.py       # weekly cycle, dry-run only (see engine/mt5_connector.py)
+python engine/run_weekly.py       # TF-only weekly cycle, dry-run only (see engine/mt5_connector.py)
+python engine/run_combined.py     # blended TF+MR book (phase13b/13c 80/20), dry-run, run DAILY
 python engine/test_engine.py
+python engine/test_combined.py
 ```
+
+The blended engine needs the Mean-Reversion-Research repo as a sibling
+directory (`../MEAN REVERSION`, path in `config.json`'s `blend` block); it
+imports that program's engine unchanged rather than reimplementing it.
 
 Data: yfinance daily → weekly (W-FRI), cached in `data/`. 16 assets: 6 equity
 indices, gold/silver/oil futures, 3 FX pairs, 4 sector ETFs (sectors instead of

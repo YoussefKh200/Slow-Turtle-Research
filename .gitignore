@@ -3,3 +3,5 @@ __pycache__/
 engine/journal.jsonl
 engine/run_weekly.log
 final_strategy_equity.csv
+engine/journal_combined.jsonl
+engine/run_combined.log

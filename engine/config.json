@@ -38,6 +38,14 @@
     "halt_buffer": 0.8,
     "_source": "phase11: overlays keep the backtest at -3.6% total DD; halt new rebalances at halt_buffer x each cap as the hard guard"
   },
+  "blend": {
+    "enabled": true,
+    "tf_weight": 0.8,
+    "mr_vol_match": 0.3154,
+    "mr_repo": "../../MEAN REVERSION",
+    "mr_tickers": ["QQQ", "SPY"],
+    "_source": "phase13b/13c: TF 80% / MR 20% beats pure TF (Sharpe 1.07 vs 0.94, MaxDD -2.7% vs -3.6%, DSR 0.956 vs 0.875). mr_vol_match = sigma_tf/sigma_mr frozen from phase13b (1068w); MR sleeves are ~3x more volatile than the FTMO-scaled TF book, so each scales down by this before the 80/20. Re-run src/phase13b_real_mr_blend.py and update if the ratio drifts."
+  },
   "monitoring": {
     "min_rolling_sharpe_3y": -0.3,
     "_source": "phase12: every disjoint 5y window scored Sharpe 0.78-1.18; a 3y rolling Sharpe below -0.3 is outside anything seen and means stop and re-research"
