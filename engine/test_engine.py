@@ -1,6 +1,9 @@
 """Sanity checks for the production engine core."""
+import os
+import tempfile
 import numpy as np
-from core import load_config, run, ftmo_check
+from core import load_config, run, ftmo_check, RebalanceIntent, Journal
+from mt5_connector import DryRunConnector
 
 
 def test_engine_end_to_end():
@@ -25,7 +28,23 @@ def test_ftmo_check_halts():
     assert dd_breach["halt_new_entries"]
 
 
+def test_dry_run_journals_orders():
+    path = os.path.join(tempfile.gettempdir(), "test_journal.jsonl")
+    if os.path.exists(path):
+        os.remove(path)
+    journal = Journal(path)
+    intents = [RebalanceIntent("2026-07-17", "SPY", "SPY", 0.0269, "weekly rebalance"),
+               RebalanceIntent("2026-07-17", "GOLD", "GC=F", 0.0164, "weekly rebalance")]
+    recs = DryRunConnector(journal).execute(intents)
+    assert len(recs) == 2
+    logged = journal.read()
+    assert len(logged) == 2 and logged[0]["kind"] == "dry_run_order"
+    assert logged[1]["intent"]["target_weight"] == 0.0164
+    os.remove(path)
+
+
 if __name__ == "__main__":
     test_ftmo_check_halts()
     test_engine_end_to_end()
+    test_dry_run_journals_orders()
     print("engine sanity checks passed")

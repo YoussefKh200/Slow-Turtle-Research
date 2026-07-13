@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 engine/journal.jsonl
 engine/run_weekly.log
+final_strategy_equity.csv

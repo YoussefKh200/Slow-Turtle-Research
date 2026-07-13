@@ -7,6 +7,11 @@ diversified, vol-targeted, FTMO-compatible trend-following engine.
 behavioral biases and slow information diffusion create trends that last longer
 than expected. Every book parameter was treated as a hypothesis.
 
+For the full walkthrough of every strategy variant tested and every test that
+guards the code, see [RESEARCH.md](RESEARCH.md). For the final validated
+strategy as one dependency-light file to drop into an external backtester,
+see [final_strategy.py](final_strategy.py).
+
 ## Layout
 
 ```
@@ -22,8 +27,8 @@ engine/    production engine: config.json, core.py, mt5_connector.py, run_weekly
 pip install pandas numpy scipy matplotlib yfinance
 python src/phase1_baseline.py     # any phase -> results/phaseN/PHASEN_REPORT.md
 python src/test_backtest.py       # backtest sanity checks
-python engine/run_weekly.py       # weekly cycle, dry-run (--live for MT5)
-python engine/test_engine.py && python engine/test_mt5_order.py
+python engine/run_weekly.py       # weekly cycle, dry-run only (see engine/mt5_connector.py)
+python engine/test_engine.py
 ```
 
 Data: yfinance daily → weekly (W-FRI), cached in `data/`. 16 assets: 6 equity
@@ -56,6 +61,7 @@ data -> sleeve_weight() -> portfolio -> overlay exposure -> RebalanceIntent -> c
 
 - `engine/config.json` — every parameter cites the phase that selected it.
 - `engine/core.py` — pure functions; state lives in the append-only `journal.jsonl`.
-- `engine/run_weekly.py` — weekly cycle: refresh data, targets, FTMO check, execute.
-  Dry-run by default; `--live` uses the MetaTrader5 package (`mt5_connector.MT5Connector`,
-  FTMO CFD symbol map). Schedule `run_weekly.bat` for Monday pre-open.
+- `engine/run_weekly.py` — weekly cycle: refresh data, targets, FTMO check, execute (dry-run).
+- `engine/mt5_connector.py` — `DryRunConnector` only for now; a real MT5 order-routing
+  connector is deliberately not built until there's a demo/funded account and verified
+  broker symbol names to test it against (see RESEARCH.md's "path to live" section).

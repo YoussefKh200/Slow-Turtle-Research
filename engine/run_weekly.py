@@ -1,9 +1,8 @@
 """Weekly cycle: refresh data, compute target weights, risk-check, execute
-(dry-run by default), journal everything.
+(dry-run only for now — see mt5_connector.py), journal everything.
 
 Usage:
-    python run_weekly.py           # dry run
-    python run_weekly.py --live    # requires MetaTrader5 package + terminal
+    python run_weekly.py
 """
 import argparse
 
@@ -13,7 +12,6 @@ from mt5_connector import DryRunConnector
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--live", action="store_true")
     ap.add_argument("--config", default=None)
     ap.add_argument("--no-refresh", action="store_true", help="use cached data")
     args = ap.parse_args()
@@ -35,12 +33,7 @@ def main():
     journal.log("decision", {"asof": out["asof"], "risk": risk,
                              "targets": {i.asset: i.target_weight for i in intents}})
 
-    if args.live:
-        from mt5_connector import MT5Connector
-        connector = MT5Connector(journal)
-    else:
-        connector = DryRunConnector(journal)
-    connector.execute(intents)
+    DryRunConnector(journal).execute(intents)
 
     s = out["stats"]
     print(f"\nasof {out['asof']}  backtest: Sharpe {s['sharpe']:.2f}  "
