@@ -98,3 +98,7 @@ def combined_targets(cfg, journal, refresh: bool = True) -> dict:
     return {"stats": tf_out["stats"], "asof": tf_out["asof"], "intents": intents,
             "mr_journal_records": mr_journal_records,
             "gross_exposure": round(sum(abs(i.target_weight) for i in intents), 4)}
+
+
+if __name__ == "__main__":
+    raise SystemExit("combined.py is a library -- run:  python run_combined.py [--mt5] [--live]")
