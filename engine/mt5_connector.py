@@ -81,6 +81,16 @@ class MT5Connector:
             raise RuntimeError("MT5 account_info() is None -- not logged in")
         self.equity = ai.equity
         self.trade_allowed = ai.trade_allowed
+        if live and "demo" not in ai.server.lower() and not self.cfg.get("allow_real_account"):
+            raise RuntimeError(
+                f"refusing --live: terminal is logged into {ai.login} on {ai.server}, "
+                "which is not a demo server. The connector trades whatever account the "
+                "terminal shows; set mt5.allow_real_account=true in config.json only "
+                "when funded deployment is a deliberate decision.")
+        if live and not ai.trade_allowed:
+            raise RuntimeError(
+                "refusing --live: Algo Trading is disabled in the terminal (every order "
+                "would be rejected). Click the 'Algo Trading' toolbar button in MT5.")
         print(f"[MT5] {ai.login} {ai.server}  equity {ai.equity:.2f} {ai.currency}  "
               f"live={'YES' if live else 'preview'}  trade_allowed={ai.trade_allowed}")
 
