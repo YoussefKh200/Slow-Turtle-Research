@@ -46,6 +46,17 @@
     "mr_tickers": ["QQQ", "SPY"],
     "_source": "phase13b/13c: TF 80% / MR 20% beats pure TF (Sharpe 1.07 vs 0.94, MaxDD -2.7% vs -3.6%, DSR 0.956 vs 0.875). mr_vol_match = sigma_tf/sigma_mr frozen from phase13b (1068w); MR sleeves are ~3x more volatile than the FTMO-scaled TF book, so each scales down by this before the 80/20. Re-run src/phase13b_real_mr_blend.py and update if the ratio drifts."
   },
+  "mt5": {
+    "symbol_map": {
+      "NAS100": "US100.cash", "SP500": "US500.cash",
+      "GOLD": "XAUUSD", "SILVER": "XAGUSD", "OIL": "USOIL.cash",
+      "EURUSD": "EURUSD", "GBPUSD": "GBPUSD", "USDJPY": "USDJPY",
+      "MR_QQQ": "US100.cash", "MR_SPY": "US500.cash"
+    },
+    "deviation_points": 20,
+    "magic": 250714,
+    "_source": "8 native FTMO CFDs verified against the live demo terminal (account 1513939714, FTMO-Demo). The 8 ETF-derived sleeves (SPY/QQQ/DIA/IWM/XLK/XLU/XLI/XLB) have no clean CFD and are intentionally absent -> the connector skips any unmapped asset. MR_QQQ/MR_SPY net onto US100/US500 alongside TF's NAS100/SP500. Account is HEDGING mode; connector reconciles net long volume per symbol."
+  },
   "monitoring": {
     "min_rolling_sharpe_3y": -0.3,
     "_source": "phase12: every disjoint 5y window scored Sharpe 0.78-1.18; a 3y rolling Sharpe below -0.3 is outside anything seen and means stop and re-research"

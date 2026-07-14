@@ -69,7 +69,12 @@ data -> sleeve_weight() -> portfolio -> overlay exposure -> RebalanceIntent -> c
 
 - `engine/config.json` — every parameter cites the phase that selected it.
 - `engine/core.py` — pure functions; state lives in the append-only `journal.jsonl`.
-- `engine/run_weekly.py` — weekly cycle: refresh data, targets, FTMO check, execute (dry-run).
-- `engine/mt5_connector.py` — `DryRunConnector` only for now; a real MT5 order-routing
-  connector is deliberately not built until there's a demo/funded account and verified
-  broker symbol names to test it against (see RESEARCH.md's "production engine" section).
+- `engine/run_weekly.py` — TF-only weekly cycle: refresh data, targets, FTMO check, execute (dry-run).
+- `engine/combined.py` + `run_combined.py` — the blended TF+MR book (phase13b/13c 80/20), run daily.
+- `engine/mt5_connector.py` — `DryRunConnector` (no terminal) and `MT5Connector`
+  (live FTMO terminal). The MT5 symbol map in `config.json`'s `mt5` block is
+  verified against the FTMO-Demo terminal; only 8 native CFDs map (the 8
+  ETF-derived sleeves have no clean CFD and are skipped). `MT5Connector`
+  defaults to **preview** (reads real prices/positions, computes orders, sends
+  nothing); `run_combined.py --mt5` previews, `--mt5 --live` actually routes.
+  Sizing uses `tick_value*price/tick_size` for correct lots across FX/indices/metals.

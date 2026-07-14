@@ -17,7 +17,7 @@ import os
 
 from core import load_config, ftmo_check, Journal
 from combined import combined_targets
-from mt5_connector import DryRunConnector
+from mt5_connector import DryRunConnector, MT5Connector
 
 ENGINE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,6 +26,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
     ap.add_argument("--no-refresh", action="store_true", help="use cached data")
+    ap.add_argument("--mt5", action="store_true", help="connect to the MT5 terminal (preview unless --live)")
+    ap.add_argument("--live", action="store_true", help="with --mt5, actually SEND orders")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -50,7 +52,14 @@ def main():
                              "gross_exposure": out["gross_exposure"],
                              "targets": {i.asset: i.target_weight for i in out["intents"]}})
 
-    DryRunConnector(journal).execute(out["intents"])
+    if args.mt5:
+        connector = MT5Connector(journal, cfg, live=args.live)
+        try:
+            connector.execute(out["intents"])
+        finally:
+            connector.close()
+    else:
+        DryRunConnector(journal).execute(out["intents"])
 
     s = out["stats"]
     print(f"\nasof {out['asof']}  TF-book backtest: Sharpe {s['sharpe']:.2f}  "
